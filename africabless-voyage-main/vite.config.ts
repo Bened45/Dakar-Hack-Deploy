@@ -22,10 +22,36 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+
   plugins: [react()].filter(Boolean),
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+
+  // ✅ Section ajoutée pour optimiser le build
+  build: {
+    // Supprime le warning de taille de chunk
+    chunkSizeWarningLimit: 1500,
+
+    // Découpage intelligent des bundles
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Sépare React dans son propre chunk
+          react: ["react", "react-dom"],
+
+          ui: ["lucide-react", "react-icons"],
+
+          vendor: [
+            "axios",
+            "framer-motion",
+            "recharts",
+          ],
+        },
+      },
     },
   },
 }));

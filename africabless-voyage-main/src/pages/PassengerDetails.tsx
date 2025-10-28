@@ -14,27 +14,34 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { passengerInfoSchema } from "@/schemas"; // Importer le schéma global
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
+import { z } from "zod";
 
 const passengerDetailsSchema = passengerInfoSchema.extend({
   firstName: passengerInfoSchema.shape.name,
   lastName: passengerInfoSchema.shape.name,
   idNumber: z.string().min(1, { message: "Le numéro d'identification est requis." }),
   emergencyName: z.string().optional(),
-  emergencyPhone: z.string().regex(/^\+?[0-9\s\-\(]{7,20}$/, { message: "Numéro de téléphone invalide." }).optional().or(z.literal("")),
-}).transform((data) => ({
-  name: `${data.firstName} ${data.lastName}`,
-  phone: data.phone,
-  email: data.email || "",
-}));
+  emergencyPhone: z.string().regex(/^\+?[0-9\s\-(]{7,20}$/, { message: "Numéro de téléphone invalide." }).optional().or(z.literal("")),
+});
 
-const PassengerDetails = () => {
+function PassengerDetails() {
   const [bookingFor, setBookingFor] = useState("self");
   const { selectedTrip, setPassengerInfo, setTotalAmount } = useBooking();
   const { isLoggedIn, token } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof passengerDetailsSchema>>({
+  type PassengerDetailsFormValues = {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email?: string;
+    idNumber: string;
+    emergencyName?: string;
+    emergencyPhone?: string;
+  };
+
+  const form = useForm<PassengerDetailsFormValues>({
     resolver: zodResolver(passengerDetailsSchema),
     defaultValues: {
       firstName: "",
@@ -72,12 +79,8 @@ const PassengerDetails = () => {
   }
 
   // Extraire les propriétés avec des valeurs par défaut pour correspondre à la structure de l'API
-  const { 
-    origin = "Origine inconnue", 
-    destination = "Destination inconnue", 
-    price = 0, 
-    departure_time = new Date().toISOString(), 
-    agency_name: agencyName = "Agence inconnue"
+  const {
+    origin = "Origine inconnue", destination = "Destination inconnue", price = 0, departure_time = new Date().toISOString(), agency_name: agencyName = "Agence inconnue"
   } = selectedTrip || {};
 
   const onSubmit = (values: z.infer<typeof passengerDetailsSchema>) => {
@@ -260,6 +263,6 @@ const PassengerDetails = () => {
       <Chatbot />
     </div>
   );
-};
+}
 
 export default PassengerDetails;
