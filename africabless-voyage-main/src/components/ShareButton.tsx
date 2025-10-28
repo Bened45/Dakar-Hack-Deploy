@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Share2, Copy, Check, Facebook, Twitter, Linkedin, Whatsapp } from "lucide-react";
+import { Share2, Copy, Check, Facebook, Twitter, Linkedin } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa"; // depuis react-icons
+
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -57,7 +59,7 @@ const ShareButton = ({
     },
     {
       name: "WhatsApp",
-      icon: Whatsapp,
+      icon: FaWhatsapp,
       action: () => {
         window.open(
           `https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`,
