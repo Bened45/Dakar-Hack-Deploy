@@ -1,6 +1,18 @@
 // API Base URL
 export const API_BASE_URL = "/api";
 
+// Importer les schémas de validation
+import { 
+  searchFiltersSchema, 
+  popularRouteSchema, 
+  tripSchema,
+  passengerInfoSchema,
+  reservationSchema,
+  reviewSchema,
+  createReviewSchema,
+  reviewStatsSchema
+} from '@/schemas';
+
 // Petit garde de type pour vérifier si une valeur possède une propriété 'name'
 const isNamedError = (v: unknown): v is { name: string } => {
   return (
@@ -21,7 +33,9 @@ export const getPopularRoutes = async () => {
     }
     
     const routes = await response.json();
-    return routes;
+    
+    // Valider les itinéraires populaires avec Zod
+    return routes.map((route: any) => popularRouteSchema.parse(route));
   } catch (error) {
     console.error("Error fetching popular routes:", error);
     return [];
@@ -31,13 +45,16 @@ export const getPopularRoutes = async () => {
 // API function to search for trips
 export const searchTrips = async (filters: { origin?: string; destination?: string; date?: string; min_price?: number; max_price?: number }) => {
   try {
+    // Valider les filtres avec Zod
+    const validatedFilters = searchFiltersSchema.parse(filters);
+    
     // Construire l'URL de recherche avec les paramètres
     const params = new URLSearchParams();
-    if (filters.origin) params.append('origin', filters.origin);
-    if (filters.destination) params.append('destination', filters.destination);
-    if (filters.date) params.append('date', filters.date);
-    if (filters.min_price) params.append('min_price', filters.min_price.toString());
-    if (filters.max_price) params.append('max_price', filters.max_price.toString());
+    if (validatedFilters.origin) params.append('origin', validatedFilters.origin);
+    if (validatedFilters.destination) params.append('destination', validatedFilters.destination);
+    if (validatedFilters.date) params.append('date', validatedFilters.date);
+    if (validatedFilters.min_price) params.append('min_price', validatedFilters.min_price.toString());
+    if (validatedFilters.max_price) params.append('max_price', validatedFilters.max_price.toString());
     
     const url = `${API_BASE_URL}/search?${params.toString()}`;
     console.log("Searching trips with URL:", url);
@@ -50,7 +67,9 @@ export const searchTrips = async (filters: { origin?: string; destination?: stri
     
     const trips = await response.json();
     console.log("Trips received:", trips);
-    return trips;
+    
+    // Valider les trajets reçus avec Zod
+    return trips.map((trip: any) => tripSchema.parse(trip));
   } catch (error) {
     console.error("Error searching trips:", error);
     return [];
@@ -64,8 +83,14 @@ export const createReservation = async (
   token: string | null // Optional token for discount
 ) => {
   try {
+    // Valider les données avec Zod
+    const validatedData = reservationSchema.parse({
+      schedule_id,
+      passenger_info
+    });
+    
     // Vérifier que schedule_id est défini
-    if (!schedule_id) {
+    if (!validatedData.schedule_id) {
       throw new Error("schedule_id is required");
     }
     
@@ -81,10 +106,7 @@ export const createReservation = async (
     const response = await fetch(`${API_BASE_URL}/reservations`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        schedule_id,
-        passenger_info
-      })
+      body: JSON.stringify(validatedData)
     });
     
     if (!response.ok) {
@@ -589,5 +611,73 @@ export const getRoutes = async (token: string) => {
     console.error("Error fetching agency routes:", error);
     // Retourner un tableau vide en cas d'erreur pour éviter de casser l'interface
     return [];
+  }
+};
+
+// API function to get reviews for a trip
+export const getTripReviews = async (tripId: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/trips/${tripId}/reviews`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const reviews = await response.json();
+    
+    // Valider les avis reçus avec Zod
+    return reviews.map((review: any) => reviewSchema.parse(review));
+  } catch (error) {
+    console.error("Error fetching trip reviews:", error);
+    return [];
+  }
+};
+
+// API function to get review statistics for an agency
+export const getAgencyReviewStats = async (agencyId: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/agencies/${agencyId}/review-stats`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const stats = await response.json();
+    
+    // Valider les statistiques avec Zod
+    return reviewStatsSchema.parse(stats);
+  } catch (error) {
+    console.error("Error fetching agency review stats:", error);
+    return null;
+  }
+};
+
+// API function to submit a review
+export const submitReview = async (reviewData: { trip_id: string; rating: number; comment?: string; agency_id: string }, token: string) => {
+  try {
+    // Valider les données avec Zod
+    const validatedData = createReviewSchema.parse(reviewData);
+    
+    const response = await fetch(`${API_BASE_URL}/reviews`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(validatedData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+    
+    const review = await response.json();
+    
+    // Valider l'avis créé avec Zod
+    return reviewSchema.parse(review);
+  } catch (error) {
+    console.error("Error submitting review:", error);
+    throw error;
   }
 };

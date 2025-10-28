@@ -577,7 +577,7 @@ const Profile = () => {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <span>Moyen de paiement par défaut</span>
-                          <span>Mobile Money</span>
+                          <span>Orange</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span>Enregistrer les cartes pour paiement rapide</span>

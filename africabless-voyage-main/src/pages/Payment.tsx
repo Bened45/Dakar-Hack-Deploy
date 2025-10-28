@@ -255,7 +255,7 @@ const Payment = () => {
                     <Label htmlFor="momo" className="flex items-center gap-2 cursor-pointer flex-1">
                       <Smartphone className="h-5 w-5" />
                       <div>
-                        <p className="font-medium">Mobile Money</p>
+                        <p className="font-medium">Orange</p>
                         <p className="text-sm text-muted-foreground">Paiement par SMS</p>
                       </div>
                     </Label>
@@ -297,7 +297,7 @@ const Payment = () => {
                       onChange={(e) => setPhoneNumber(e.target.value)}
                     />
                     <p className="text-sm text-muted-foreground">
-                      Entrez le numéro de téléphone à utiliser pour le paiement Mobile Money/Wave
+                      Entrez le numéro de téléphone à utiliser pour le paiement Orange/Wave
                     </p>
                   </div>
                 </Card>

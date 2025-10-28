@@ -11,19 +11,21 @@ import { useState, useEffect } from "react";
 import { useBooking } from "@/context/BookingContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { passengerInfoSchema } from "@/schemas"; // Importer le schéma global
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
 
-const passengerDetailsSchema = z.object({
-  firstName: z.string().min(1, { message: "Le prénom est requis." }),
-  lastName: z.string().min(1, { message: "Le nom de famille est requis." }),
-  phone: z.string().regex(/^\+?[0-9\s\-\(]{7,20}$/, { message: "Numéro de téléphone invalide." }),
-  email: z.string().email({ message: "Adresse e-mail invalide." }).optional().or(z.literal("")),
+const passengerDetailsSchema = passengerInfoSchema.extend({
+  firstName: passengerInfoSchema.shape.name,
+  lastName: passengerInfoSchema.shape.name,
   idNumber: z.string().min(1, { message: "Le numéro d'identification est requis." }),
   emergencyName: z.string().optional(),
   emergencyPhone: z.string().regex(/^\+?[0-9\s\-\(]{7,20}$/, { message: "Numéro de téléphone invalide." }).optional().or(z.literal("")),
-});
+}).transform((data) => ({
+  name: `${data.firstName} ${data.lastName}`,
+  phone: data.phone,
+  email: data.email || "",
+}));
 
 const PassengerDetails = () => {
   const [bookingFor, setBookingFor] = useState("self");

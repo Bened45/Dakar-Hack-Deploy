@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import routeDakar from "@/assets/route-dakar.jpg";
 import routeBamako from "@/assets/route-bamako.jpg";
 import routeAbidjan from "@/assets/route-abidjan.jpg";
+import ShareButton from "@/components/ShareButton";
 
 const TripDetails = () => {
   const { selectedTrip } = useBooking();
@@ -102,6 +103,13 @@ const TripDetails = () => {
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute top-4 right-4">
+                <ShareButton 
+                  url={window.location.href}
+                  title={`Trajet de ${origin} à ${destination} sur bitTravel`}
+                  text={`Découvrez ce trajet de ${origin} à ${destination} avec ${agency?.name}`}
+                />
+              </div>
               <div className="absolute bottom-6 left-6">
                 <h1 className="text-3xl font-bold text-white mb-2">{origin} → {destination}</h1>
                 <div className="flex items-center gap-4 text-white/90">
@@ -130,7 +138,14 @@ const TripDetails = () => {
                     <span className="text-sm text-muted-foreground">(234 avis)</span>
                   </div>
                 </div>
-                <Badge className="bg-gradient-hero text-white">Premium</Badge>
+                <div className="flex gap-2">
+                  <Badge className="bg-gradient-hero text-white">Premium</Badge>
+                  <ShareButton 
+                    url={window.location.href}
+                    title={`Trajet de ${origin} à ${destination} avec ${agency?.name} sur bitTravel`}
+                    className="h-8"
+                  />
+                </div>
               </div>
               <p className="text-muted-foreground">
                 Service de transport interurbain professionnel avec plus de 10 ans d'expérience.
@@ -195,6 +210,15 @@ const TripDetails = () => {
               </ul>
             </Card>
           </div>
+
+          {/* Reviews Section */}
+          {selectedTrip && (
+            <ReviewSection 
+              tripId={selectedTrip.id} 
+              agencyId={selectedTrip.agency_id || "default-agency-id"} 
+              agencyName={selectedTrip.agency_name} 
+            />
+          )}
 
           {/* Booking Card */}
           <div className="lg:col-span-1">

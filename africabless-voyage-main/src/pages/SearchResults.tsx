@@ -5,28 +5,18 @@ import Chatbot from "@/components/Chatbot";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Heart } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { searchTrips } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { Trip as TripType } from "@/schemas"; // Importer le type Trip de nos schémas
+import { useFavorites } from "@/hooks/useFavorites";
 
 // Interface correspondant à la structure réelle des données
-interface Trip {
-  id: string;
-  route_id: string;
-  departure_time: string;
-  price: number;
-  seats: number;
-  available_seats?: number;
-  origin: string;
-  destination: string;
-  duration: number;
-  agency_name: string;
-  agency_rating?: number;
-}
+interface Trip extends TripType {} // Étendre notre interface avec le type du schéma
 
 const agencies = [
   "Trans-Sahel Express",
@@ -54,12 +44,14 @@ const SearchResults = () => {
   const [results, setResults] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [favorites] = useFavorites();
 
   // Filter states
   const [priceRange, setPriceRange] = useState([0, 50000]);
   const [selectedAgencies, setSelectedAgencies] = useState<string[]>([]);
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [minRating, setMinRating] = useState(0);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   const origin = searchParams.get("origin") || "";
   const destination = searchParams.get("destination") || "";
@@ -94,7 +86,7 @@ const SearchResults = () => {
   }, [searchParams, toast, origin, destination, date, minPriceParam, maxPriceParam]); // Add new dependencies
 
   const filteredResults = useMemo(() => {
-    return results.filter((schedule) => {
+    let filtered = results.filter((schedule) => {
       // Backend now handles price filtering, but we keep client-side for additional filters
       if (schedule.price < priceRange[0] || schedule.price > priceRange[1]) {
         return false;
@@ -113,7 +105,16 @@ const SearchResults = () => {
       }
       return true;
     });
-  }, [results, priceRange, selectedAgencies, selectedTimes, minRating]);
+    
+    // Appliquer le filtre des favoris si activé
+    if (showFavoritesOnly) {
+      filtered = filtered.filter(schedule => 
+        favorites.some(fav => fav.id === schedule.id)
+      );
+    }
+    
+    return filtered;
+  }, [results, priceRange, selectedAgencies, selectedTimes, minRating, showFavoritesOnly, favorites]);
 
   const handleAgencyChange = (agency: string) => {
     setSelectedAgencies((prev) =>
@@ -221,7 +222,7 @@ const SearchResults = () => {
                 </div>
 
                 {/* Rating */}
-                <div>
+                <div className="mb-6">
                   <h4 className="font-medium mb-3">Note minimale</h4>
                   <Slider
                     value={[minRating]}
@@ -231,6 +232,22 @@ const SearchResults = () => {
                   />
                   <div className="text-sm text-muted-foreground mt-2">
                     {minRating.toFixed(1)} et plus
+                  </div>
+                </div>
+
+                {/* Favorites Filter */}
+                <div className="mb-6">
+                  <h4 className="font-medium mb-3">Favoris</h4>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="favorites"
+                      checked={showFavoritesOnly}
+                      onCheckedChange={(checked) => setShowFavoritesOnly(checked as boolean)}
+                    />
+                    <label htmlFor="favorites" className="text-sm cursor-pointer flex items-center gap-1">
+                      <Heart className="h-4 w-4 text-red-500" aria-hidden="true" />
+                      Afficher uniquement les favoris
+                    </label>
                   </div>
                 </div>
               </div>
@@ -248,13 +265,25 @@ const SearchResults = () => {
                   <p className="text-muted-foreground">
                     {isLoading
                       ? "Recherche en cours..."
-                      : `${filteredResults.length} voyages trouvés`}
+                      : `${filteredResults.length} voyages trouvés${showFavoritesOnly ? " (favoris uniquement)" : ""}`}
                   </p>
                 </div>
-                <Button variant="outline" className="lg:hidden">
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Filtres
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="lg:hidden">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filtres
+                  </Button>
+                  {favorites.length > 0 && (
+                    <Button 
+                      variant={showFavoritesOnly ? "default" : "outline"} 
+                      onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                      aria-pressed={showFavoritesOnly}
+                    >
+                      <Heart className="h-4 w-4 mr-2" aria-hidden="true" />
+                      Favoris ({favorites.length})
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="grid gap-6">

@@ -1,18 +1,19 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
+import { Trip, PassengerInfo } from '@/schemas'; // Importer les types de nos schémas
 
 // Define the shape of the context data
 interface BookingContextType {
-  selectedTrip: any; // This will be the schedule object
-  passengerInfo: { name: string; phone: string; email: string } | null;
+  selectedTrip: Trip | null; // Utiliser le type Trip de nos schémas
+  passengerInfo: PassengerInfo | null; // Utiliser le type PassengerInfo de nos schémas
   totalAmount: number;
   reservationId: string | null;
-  ticketId: string | null; // Add ticketId
-  selectTrip: (trip: any) => void;
-  setPassengerInfo: (info: { name: string; phone: string; email: string }) => void;
+  ticketId: string | null;
+  selectTrip: (trip: Trip) => void; // Utiliser le type Trip de nos schémas
+  setPassengerInfo: (info: PassengerInfo) => void; // Utiliser le type PassengerInfo de nos schémas
   setTotalAmount: (amount: number) => void;
   setReservationId: (id: string) => void;
-  setTicketId: (id: string) => void; // Add setTicketId
-  resetBooking: () => void; // To clear booking state after confirmation or cancellation
+  setTicketId: (id: string) => void;
+  resetBooking: () => void;
 }
 
 // Create the context with a default value
@@ -20,13 +21,13 @@ const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 // Create the provider component
 export const BookingProvider = ({ children }: { children: ReactNode }) => {
-  const [selectedTrip, setSelectedTrip] = useState<any>(null);
-  const [passengerInfo, setPassengerInfo] = useState<{ name: string; phone: string; email: string } | null>(null);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null); // Utiliser le type Trip de nos schémas
+  const [passengerInfo, setPassengerInfo] = useState<PassengerInfo | null>(null); // Utiliser le type PassengerInfo de nos schémas
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [reservationId, setReservationId] = useState<string | null>(null);
-  const [ticketId, setTicketId] = useState<string | null>(null); // Add ticketId
+  const [ticketId, setTicketId] = useState<string | null>(null);
 
-  const selectTrip = (trip: any) => {
+  const selectTrip = (trip: Trip) => { // Utiliser le type Trip de nos schémas
     setSelectedTrip(trip);
   };
 
@@ -35,7 +36,7 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
     setPassengerInfo(null);
     setTotalAmount(0);
     setReservationId(null);
-    setTicketId(null); // Reset ticketId
+    setTicketId(null);
   };
 
   const value = {
@@ -43,12 +44,12 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
     passengerInfo,
     totalAmount,
     reservationId,
-    ticketId, // Add ticketId
+    ticketId,
     selectTrip,
     setPassengerInfo,
     setTotalAmount,
     setReservationId,
-    setTicketId, // Add setTicketId
+    setTicketId,
     resetBooking,
   };
 
