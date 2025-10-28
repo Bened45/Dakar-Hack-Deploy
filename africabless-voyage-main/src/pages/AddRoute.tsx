@@ -29,7 +29,7 @@ const formSchema = z.object({
 const AddRoute = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,6 +42,9 @@ const AddRoute = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log("Tentative de création d'itinéraire avec token:", token ? "présent" : "absent");
+    console.log("Valeurs du formulaire:", values);
+    
     if (!token) {
       toast({
         title: "Erreur d'authentification",
@@ -54,6 +57,7 @@ const AddRoute = () => {
 
     setIsSubmitting(true);
     try {
+      console.log("Appel de createRoute avec token:", token.substring(0, 20) + "...");
       await createRoute(token, values.origin, values.destination, values.duration);
       toast({
         title: "Itinéraire ajouté avec succès !",
@@ -61,11 +65,28 @@ const AddRoute = () => {
       });
       navigate("/agency/dashboard");
     } catch (error: any) {
+      console.error("Erreur détaillée lors de la création d'itinéraire:", error);
+      
+      // Message d'erreur personnalisé pour l'authentification
+      let errorMessage = error.message || "Une erreur inattendue est survenue.";
+      if (errorMessage.includes("Authentification invalide")) {
+        errorMessage = "Votre session a expiré. Veuillez vous reconnecter.";
+        // Déconnecter l'utilisateur automatiquement
+        logout();
+      }
+      
       toast({
         title: "Erreur lors de l'ajout de l'itinéraire",
-        description: error.message || "Une erreur inattendue est survenue.",
+        description: errorMessage,
         variant: "destructive",
       });
+      
+      // Rediriger vers la connexion si l'authentification est invalide
+      if (errorMessage.includes("Votre session a expiré")) {
+        setTimeout(() => {
+          navigate("/agency/login");
+        }, 3000);
+      }
     } finally {
       setIsSubmitting(false);
     }

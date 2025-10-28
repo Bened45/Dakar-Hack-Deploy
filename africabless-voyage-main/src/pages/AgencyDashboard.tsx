@@ -12,37 +12,65 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, QrCode, Bus, Users, DollarSign, Ticket } from "lucide-react"; // Import Lucide icons
+import { Plus, QrCode, Bus, Users, DollarSign, Ticket, LogOut } from "lucide-react"; // Import Lucide icons
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   getAgencyStats,
   getRecentBookings,
   getUpcomingTrips,
-  getAgencyDetails, // Import getAgencyDetails
+  getAgencyDetails,
+  agencyLogout, // Import agencyLogout
 } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext"; // Import useAuth
 
 const AgencyDashboard = () => {
-  const { token } = useAuth(); // Get token from AuthContext
+  const { token, logout } = useAuth(); // Get token and logout from AuthContext
   const [agencyName, setAgencyName] = useState("Votre Agence"); // State for agency name
   const [stats, setStats] = useState([]);
   const [recentBookings, setRecentBookings] = useState([]);
   const [upcomingTrips, setUpcomingTrips] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const handleLogout = async () => {
+    try {
+      // Appeler l'API de déconnexion
+      if (token) {
+        await agencyLogout(token);
+      }
+      
+      // Déconnecter l'utilisateur localement
+      logout();
+      
+      // Rediriger vers la page de connexion
+      window.location.href = "/agency/login";
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+      // Même en cas d'erreur, déconnecter l'utilisateur localement
+      logout();
+      window.location.href = "/agency/login";
+    }
+  };
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        // Vérifier que le token est présent avant d'appeler les APIs
+        if (!token) {
+          console.error("No token available for API calls");
+          setIsLoading(false);
+          return;
+        }
+        
         const [agencyData, statsData, bookingsData, tripsData] = await Promise.all([
           getAgencyDetails(token), // Fetch agency details
-          getAgencyStats(),
+          getAgencyStats(token), // Pass token to getAgencyStats
           getRecentBookings(),
           getUpcomingTrips(token), // Pass token to getUpcomingTrips
         ]);
         setAgencyName(agencyData.name || "Votre Agence"); // Update agency name
-        setStats(statsData);
+        setStats(Array.isArray(statsData) ? statsData : []);
         setRecentBookings(bookingsData);
         setUpcomingTrips(tripsData);
       } catch (error) {
@@ -82,6 +110,14 @@ const AgencyDashboard = () => {
                 Ajouter un Nouvel Horaire
               </Button>
             </Link>
+            <Button 
+              variant="outline" 
+              onClick={handleLogout}
+              aria-label="Déconnexion"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Déconnexion
+            </Button>
           </div>
         </div>
 
@@ -96,7 +132,7 @@ const AgencyDashboard = () => {
                   <Skeleton className="h-4 w-3/4" />
                 </Card>
               ))
-            : stats.map((stat, idx) => {
+            : (Array.isArray(stats) ? stats : []).map((stat, idx) => {
                 const IconComponent = { Bus, Users, DollarSign, Ticket }[stat.icon]; // Map string to Lucide icon component
                 return (
                   <Card key={idx} className="p-6 shadow-card">

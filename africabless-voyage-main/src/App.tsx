@@ -28,6 +28,7 @@ import Contact from "./pages/Contact";
 import AgencySignUp from "./pages/AgencySignUp";
 import AgencyAuthRedirect from "./components/AgencyAuthRedirect"; // Import AgencyAuthRedirect
 import ClientAuthGuard from "./components/ClientAuthGuard"; // Import ClientAuthGuard
+import AgencyAuthGuard from "./components/AgencyAuthGuard"; // Import AgencyAuthGuard
 
 const queryClient = new QueryClient();
 
@@ -51,10 +52,13 @@ const App = () => (
               <Route path="/agency/login" element={<AgencyLogin />} />
               <Route path="/agency/signup" element={<AgencySignUp />} />
             </Route>
-            <Route path="/agency/dashboard" element={<AgencyDashboard />} />
-            <Route path="/agency/add-route" element={<AddRoute />} />
-            <Route path="/agency/add-schedule" element={<AddSchedule />} />
-            <Route path="/agency/boarding-control" element={<BoardingControl />} />
+            {/* Protected agency routes with role verification */}
+            <Route element={<AgencyAuthGuard />}>
+              <Route path="/agency/dashboard" element={<AgencyDashboard />} />
+              <Route path="/agency/add-route" element={<AddRoute />} />
+              <Route path="/agency/add-schedule" element={<AddSchedule />} />
+              <Route path="/agency/boarding-control" element={<BoardingControl />} />
+            </Route>
             <Route path="/verify" element={<TicketVerification />} />
             {/* Protected client routes */}
             <Route element={<ClientAuthGuard />}>

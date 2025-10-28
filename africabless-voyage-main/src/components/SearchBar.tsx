@@ -18,14 +18,10 @@ const SearchBar = ({ variant = "hero" }: SearchBarProps) => {
   const [date, setDate] = useState<Date>();
   const [origin, setOrigin] = useState(""); // Renamed from 'from'
   const [destination, setDestination] = useState(""); // Renamed from 'to'
-  const [minPrice, setMinPrice] = useState<string>(""); // New state for min price
-  const [maxPrice, setMaxPrice] = useState<string>(""); // New state for max price
   const navigate = useNavigate();
   const { toast } = useToast();
   const originRef = useRef<HTMLInputElement>(null);
   const destinationRef = useRef<HTMLInputElement>(null);
-  const minPriceRef = useRef<HTMLInputElement>(null);
-  const maxPriceRef = useRef<HTMLInputElement>(null);
   const [recentSearches, addSearch, clearSearches] = useRecentSearches();
   const [showRecentSearches, setShowRecentSearches] = useState(false);
 
@@ -47,12 +43,6 @@ const SearchBar = ({ variant = "hero" }: SearchBarProps) => {
     params.append("destination", destination);
     if (date) {
       params.append("date", format(date, "yyyy-MM-dd")); // Format date for backend
-    }
-    if (minPrice) {
-      params.append("min_price", minPrice);
-    }
-    if (maxPrice) {
-      params.append("max_price", maxPrice);
     }
     navigate(`/search?${params.toString()}`);
   };
@@ -83,7 +73,7 @@ const SearchBar = ({ variant = "hero" }: SearchBarProps) => {
       role="search"
       aria-label="Recherche de trajets"
     >
-      <div className={`grid gap-4 ${isHero ? "md:grid-cols-4" : "md:grid-cols-6"}`}> {/* Adjusted grid columns */}
+      <div className={`grid gap-4 ${isHero ? "md:grid-cols-4" : "md:grid-cols-4"}`}> {/* Ajusté à 4 colonnes */}
         <div className="relative">
           <label htmlFor="origin" className="text-xs font-medium text-muted-foreground mb-1.5 block">De</label>
           <div className="relative">
@@ -169,33 +159,7 @@ const SearchBar = ({ variant = "hero" }: SearchBarProps) => {
           <div id="date-help" className="sr-only">Sélectionnez la date de voyage</div>
         </div>
 
-        <div className="relative">
-          <label htmlFor="minPrice" className="text-xs font-medium text-muted-foreground mb-1.5 block">Prix Min</label>
-          <Input
-            id="minPrice"
-            ref={minPriceRef}
-            type="number"
-            placeholder="Prix minimum"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            aria-describedby="minPrice-help"
-          />
-          <div id="minPrice-help" className="sr-only">Entrez le prix minimum (optionnel)</div>
-        </div>
 
-        <div className="relative">
-          <label htmlFor="maxPrice" className="text-xs font-medium text-muted-foreground mb-1.5 block">Prix Max</label>
-          <Input
-            id="maxPrice"
-            ref={maxPriceRef}
-            type="number"
-            placeholder="Prix maximum"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            aria-describedby="maxPrice-help"
-          />
-          <div id="maxPrice-help" className="sr-only">Entrez le prix maximum (optionnel)</div>
-        </div>
 
         <Button
           className="bg-gradient-hero hover:opacity-90 mt-auto h-10"

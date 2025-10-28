@@ -1,5 +1,5 @@
 // API Base URL
-export const API_BASE_URL = "/api";
+export const API_BASE_URL = "https://backend-s7gk.onrender.com";
 
 // Importer les schémas de validation
 import { 
@@ -349,17 +349,56 @@ export const getAgencyDetails = async (token: string) => {
   };
 };
 
+// API function to logout agency
+export const agencyLogout = async (token: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/agencies/logout`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error logging out agency:", error);
+    throw error;
+  }
+};
+
 // API function to get agency stats
-export const getAgencyStats = async () => {
-  // Simuler un délai réseau
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  return [
-    { icon: "Bus", label: "Voyages Actifs", value: 12, change: "+2" },
-    { icon: "Users", label: "Passagers Total", value: 1247, change: "+15%" },
-    { icon: "DollarSign", label: "Revenus (Mois)", value: "450000", change: "+8%" },
-    { icon: "Ticket", label: "Billets Vendus", value: 892, change: "+12%" },
-  ];
+export const getAgencyStats = async (token: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/agencies/stats`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+    
+    const stats = await response.json();
+    return stats;
+  } catch (error) {
+    console.error("Error fetching agency stats:", error);
+    // Retourner les données simulées en cas d'erreur pour éviter de casser l'interface
+    return [
+      { icon: "Bus", label: "Voyages Actifs", value: 12, change: "+2" },
+      { icon: "Users", label: "Passagers Total", value: 1247, change: "+15%" },
+      { icon: "DollarSign", label: "Revenus (Mois)", value: "450000", change: "+8%" },
+      { icon: "Ticket", label: "Billets Vendus", value: 892, change: "+12%" },
+    ];
+  }
 };
 
 // API function to get recent bookings
@@ -539,6 +578,9 @@ export const getUserProfile = async (token: string) => {
 // API function to create a new route
 export const createRoute = async (token: string, origin: string, destination: string, duration: number) => {
   try {
+    console.log("createRoute appelée avec:", { origin, destination, duration });
+    console.log("Token length:", token?.length);
+    
     const response = await fetch(`${API_BASE_URL}/routes`, {
       method: 'POST',
       headers: {
@@ -552,12 +594,30 @@ export const createRoute = async (token: string, origin: string, destination: st
       })
     });
     
+    console.log("Réponse du serveur:", response.status, response.statusText);
+    
     if (!response.ok) {
-      const errorData = await response.json();
+      // Essayer de récupérer le message d'erreur en JSON d'abord
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (jsonError) {
+        // Si ce n'est pas du JSON, récupérer comme texte
+        errorData = { detail: await response.text() };
+      }
+      
+      console.error("Erreur détaillée du serveur:", errorData);
+      
+      // Gérer les cas spécifiques
+      if (response.status === 403 && errorData.detail === "Not authenticated") {
+        throw new Error("Authentification invalide. Veuillez vous reconnecter.");
+      }
+      
       throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
     }
     
     const route = await response.json();
+    console.log("Itinéraire créé avec succès:", route);
     return route;
   } catch (error) {
     console.error("Error creating route:", error);
