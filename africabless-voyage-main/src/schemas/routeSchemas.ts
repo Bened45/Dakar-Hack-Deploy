@@ -31,11 +31,11 @@ export const popularRouteSchema = z.object({
 
 // Schéma pour les détails d'un trajet
 export const tripSchema = z.object({
-  id: z.string().min(1, "L'ID est requis"),
-  route_id: z.string().min(1, "L'ID de l'itinéraire est requis"),
+  id: z.string().min(1, "L'ID est requis").optional(),
+  route_id: z.string().min(1, "L'ID de l'itinéraire est requis").optional(),
   departure_time: z.string().min(1, "L'heure de départ est requise"),
   price: z.number().min(0, "Le prix doit être positif"),
-  seats: z.number().min(0, "Le nombre de sièges doit être positif"),
+  seats: z.number().min(0, "Le nombre de sièges doit être positif").optional(),
   available_seats: z.number().min(0, "Le nombre de sièges disponibles doit être positif").optional(),
   origin: z.string().min(1, "L'origine est requise"),
   destination: z.string().min(1, "La destination est requise"),

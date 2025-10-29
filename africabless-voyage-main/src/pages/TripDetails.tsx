@@ -12,6 +12,7 @@ import routeDakar from "@/assets/route-dakar.jpg";
 import routeBamako from "@/assets/route-bamako.jpg";
 import routeAbidjan from "@/assets/route-abidjan.jpg";
 import ShareButton from "@/components/ShareButton";
+import ReviewSection from "@/components/ReviewSection";
 
 const TripDetails = () => {
   const { selectedTrip } = useBooking();
