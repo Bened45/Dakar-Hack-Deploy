@@ -4,56 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send, Globe, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getChatbotResponse } from "@/lib/api";
 import { marked } from "marked";
 
 const CHATBOT_STORAGE_KEY = "bitbot_conversation_history";
-
-// ═══════════════════════════════════════════════════════════
-// 🔥 FONCTION DE STREAMING (À AJOUTER)
-// ═══════════════════════════════════════════════════════════
-async function sendMessageToBitBot(userMessage: string, onChunk: (text: string) => void) {
-  try {
-    // Appeler l'API avec streaming
-    const response = await fetch('http://localhost:8000/chat/plain', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ message: userMessage })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erreur HTTP: ${response.status}`);
-    }
-
-    // Lire le stream
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    let fullText = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      
-      if (done) {
-        console.log('✅ Réponse complète');
-        break;
-      }
-
-      // Décoder le chunk
-      const chunk = decoder.decode(value, { stream: true });
-      fullText += chunk;
-      
-      // Appeler le callback avec le texte complet accumulé
-      onChunk(fullText);
-    }
-
-    return fullText;
-
-  } catch (error) {
-    console.error('❌ Erreur:', error);
-    throw error;
-  }
-}
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -61,21 +15,21 @@ const Chatbot = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
   const [isBotTyping, setIsBotTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef(null);
 
   // Suggestions rapides selon la langue
   const quickSuggestions = {
     fr: [
-      "Qu'est ce que BitTravel?",
-      "Comment rechercher un trajet?",
-      "Comment payer un ticket?",
-      "Comment se passe la vérification des tickets?"
+      "Comment réserver un voyage ?",
+      "Paiement avec Bitcoin",
+      "Annuler ma réservation",
+      "Vérifier mon billet"
     ],
     wo: [
-      "BitTravel lan la?",
-      "Nañuy wut tukki ci BitTravel?",
-      "Nañuy fay tiké bi?",
-      "Nan lañuy seetalé tiké yi?"
+      "Naka nga def réservation ?",
+      "Bitcoin fee pay",
+      "Annuler ma réservation",
+      "Vérifier mon billet"
     ]
   };
 
@@ -85,10 +39,11 @@ const Chatbot = () => {
     if (savedHistory) {
       try {
         const parsedHistory = JSON.parse(savedHistory);
+        // Ne conserver que les conversations récentes (moins de 24h)
         const recentConversations = parsedHistory.filter((conv: any) => {
           const convTime = new Date(conv.timestamp).getTime();
           const now = new Date().getTime();
-          return (now - convTime) < (24 * 60 * 60 * 1000);
+          return (now - convTime) < (24 * 60 * 60 * 1000); // 24 heures
         });
         if (recentConversations.length > 0) {
           setMessages(recentConversations[recentConversations.length - 1].messages);
@@ -101,7 +56,7 @@ const Chatbot = () => {
 
   // Sauvegarder l'historique dans localStorage
   useEffect(() => {
-    if (messages.length > 1) {
+    if (messages.length > 1) { // Ne sauvegarder que s'il y a une vraie conversation
       const conversation = {
         timestamp: new Date().toISOString(),
         language,
@@ -111,8 +66,10 @@ const Chatbot = () => {
       const savedHistory = localStorage.getItem(CHATBOT_STORAGE_KEY);
       let history = savedHistory ? JSON.parse(savedHistory) : [];
       
+      // Ajouter la nouvelle conversation
       history.push(conversation);
       
+      // Garder seulement les 10 dernières conversations
       if (history.length > 10) {
         history = history.slice(-10);
       }
@@ -138,60 +95,25 @@ const Chatbot = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isBotTyping]);
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔥 FONCTION handleSend MODIFIÉE POUR LE STREAMING
-  // ═══════════════════════════════════════════════════════════
   const handleSend = async (msgToSend: string = message) => {
     if (!msgToSend.trim() || isBotTyping) return;
 
-    const userMessage = { 
-      role: "user", 
-      content: msgToSend, 
-      timestamp: new Date().toISOString() 
-    };
-    
+    const userMessage = { role: "user", content: msgToSend, timestamp: new Date().toISOString() };
     setMessages((prev) => [...prev, userMessage]);
     setMessage("");
     setIsBotTyping(true);
 
-    // Créer un message vide pour le bot
-    const botMessageIndex = messages.length + 1; // Index du futur message bot
-    const emptyBotMessage = { 
-      role: "assistant", 
-      content: "", 
-      timestamp: new Date().toISOString() 
-    };
-    
-    setMessages((prev) => [...prev, emptyBotMessage]);
-
     try {
-      // ✨ STREAMING : Mise à jour progressive du message
-      await sendMessageToBitBot(msgToSend, (streamedText) => {
-        setMessages((prev) => {
-          const newMessages = [...prev];
-          // Mettre à jour le dernier message (celui du bot)
-          newMessages[newMessages.length - 1] = {
-            ...newMessages[newMessages.length - 1],
-            content: streamedText
-          };
-          return newMessages;
-        });
-      });
-
+      const botResponseText = await getChatbotResponse(msgToSend, language);
+      // Add the bot's complete response
+      const botMessage = { role: "assistant", content: botResponseText, timestamp: new Date().toISOString() };
+      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      console.error("Erreur:", error);
       const errorMessage = language === "fr" 
         ? "Désolé, je rencontre des difficultés techniques. Veuillez réessayer plus tard." 
         : "Naka nga def, ma nga am ci bokk. Jéemaatal ci kanam.";
-      
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        newMessages[newMessages.length - 1] = {
-          ...newMessages[newMessages.length - 1],
-          content: errorMessage
-        };
-        return newMessages;
-      });
+      const botMessage = { role: "assistant", content: errorMessage, timestamp: new Date().toISOString() };
+      setMessages((prev) => [...prev, botMessage]);
     } finally {
       setIsBotTyping(false);
     }
@@ -273,11 +195,7 @@ const Chatbot = () => {
                       ? "bg-gradient-hero text-white"
                       : "bg-muted text-foreground"
                   }`}
-                  dangerouslySetInnerHTML={{ 
-                    __html: msg.role === "user" 
-                      ? msg.content 
-                      : marked.parse(msg.content || '') 
-                  }}
+                  dangerouslySetInnerHTML={{ __html: msg.role === "user" ? msg.content : marked.parse(msg.content) }}
                 />
               </div>
             ))}
