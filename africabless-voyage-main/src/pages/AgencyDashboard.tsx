@@ -95,7 +95,7 @@ const AgencyDashboard = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Tableau de Bord de {agencyName}</h1> {/* Display agency name */}
-            <p className="text-muted-foreground">Trans-Sahel Express</p>
+
           </div>
           <div className="flex gap-4">
             <Link to="/agency/add-route">

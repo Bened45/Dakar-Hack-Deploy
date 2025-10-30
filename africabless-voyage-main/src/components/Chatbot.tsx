@@ -6,6 +6,9 @@ import { MessageCircle, X, Send, Globe, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getChatbotResponse } from "@/lib/api";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
+
+import "@/styles/markdown.css";
 
 const CHATBOT_STORAGE_KEY = "bitbot_conversation_history";
 
@@ -190,12 +193,12 @@ const Chatbot = () => {
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
+                  className={`max-w-[80%] rounded-lg p-3 markdown-content ${
                     msg.role === "user"
                       ? "bg-gradient-hero text-white"
                       : "bg-muted text-foreground"
                   }`}
-                  dangerouslySetInnerHTML={{ __html: msg.role === "user" ? msg.content : marked.parse(msg.content) }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content)) }}
                 />
               </div>
             ))}

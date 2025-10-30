@@ -106,12 +106,6 @@ const ShareButton = ({
           variant="outline" 
           size="sm" 
           className={className}
-          onClick={(e) => {
-            e.preventDefault();
-            if (navigator.share) {
-              handleWebShare();
-            }
-          }}
         >
           <Share2 className="h-4 w-4 mr-2" />
           <span className="hidden sm:inline">Partager</span>

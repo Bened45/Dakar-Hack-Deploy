@@ -338,15 +338,25 @@ export const agencyLogin = async (email: string, password: string) => {
 
 // API function to get agency details
 export const getAgencyDetails = async (token: string) => {
-  // Simuler un délai réseau
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  return {
-    id: "agency-1",
-    name: "Trans-Sahel Express",
-    email: "contact@transsahel.com",
-    phone: "+22997123456"
-  };
+  try {
+    const response = await fetch(`${API_BASE_URL}/agencies/me`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+    
+    const agencyDetails = await response.json();
+    return agencyDetails;
+  } catch (error) {
+    console.error("Error fetching agency details:", error);
+    throw error;
+  }
 };
 
 // API function to logout agency
@@ -463,16 +473,25 @@ export const getChatbotResponse = async (message: string, language: string) => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Essayer de parser comme JSON d'abord
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        const data = await response.json();
-        return data.response || data.message || "Désolé, je n'ai pas compris votre message.";
-      } else {
-        // Si ce n'est pas du JSON, retourner le texte directement
-        const text = await response.text();
-        return text || "Désolé, je n'ai pas compris votre message.";
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Failed to get response reader");
       }
+      
+      const decoder = new TextDecoder();
+      let result = '';
+      let done = false;
+      
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        const chunk = decoder.decode(value, { stream: !done });
+        result += chunk;
+      }
+      
+      return result || "Désolé, je n'ai pas compris votre message.";
+
     } catch (error: unknown) {
       console.error(`Error getting chatbot response (attempt ${attempt + 1}):`, error);
       lastError = error;
